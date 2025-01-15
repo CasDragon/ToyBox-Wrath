@@ -885,8 +885,23 @@ namespace ToyBox.BagOfPatches {
         public static class LockEquipmentSlot_Patch {
             [HarmonyPrefix]
             [HarmonyPatch(nameof(LockEquipmentSlot.OnTurnOn))]
-            public static bool OnTurnOn_Patch() {
+            public static bool OnTurnOn_Patch(LockEquipmentSlot __instance) {
                 if (Settings.disableEquipmentSlotLock) {
+                    __instance.Data.Slot?.Lock.Release();
+                    __instance.Data.Slot?.ReleaseDeactivateFlag();
+                    return false;
+                }
+                return true;
+            }
+        }
+        [HarmonyPatch(typeof(DisableEquipmentSlot))]
+        public static class DisableEquipmentSlot_Patch {
+            [HarmonyPrefix]
+            [HarmonyPatch(nameof(DisableEquipmentSlot.OnTurnOn))]
+            public static bool OnTurnOn_Patch(DisableEquipmentSlot __instance) {
+                if (Settings.disableEquipmentSlotLock) {
+                    __instance.Data.Slot?.Lock.Release();
+                    __instance.Data.Slot?.ReleaseDeactivateFlag();
                     return false;
                 }
                 return true;
