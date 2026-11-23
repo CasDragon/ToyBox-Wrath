@@ -506,7 +506,6 @@ namespace ToyBox {
                     }
                 }
                 // RelicInfo code borrowed (with permission from Rathtr) from https://www.nexusmods.com/pathfinderwrathoftherighteous/mods/200
-                var projectType = kingdomEventView.ProjectBlueprint.ProjectType;
                 if (Settings.previewRelicResults
                     && blueprint.ElementsArray.Find(elem => elem is KingdomActionStartEvent) is KingdomActionStartEvent e
                     && e.Event is BlueprintCrusadeEvent crusadeEvent) {
@@ -537,17 +536,23 @@ namespace ToyBox {
                         }
                     }
                     var solStrings = "\n\n";
-                    for (var i = 0; i < crusadeEvent.EventSolutions.Length; ++i) {
-                        var sol = crusadeEvent.EventSolutions[i];
-                        if (sol.IsAvail)
-                            solStrings += sol.PreviewText();
+                    FlagUnlocked ownTrigger = blueprint.TriggerCondition.HasConditions ? blueprint.TriggerCondition.Conditions.FirstOrDefault() as FlagUnlocked : null;
+                    foreach (var sol in crusadeEvent.EventSolutions) {
+                        bool relevant = !sol.m_AvailConditions.HasConditions
+                                        || (ownTrigger != null
+                                            && sol.m_AvailConditions.Conditions[0] is FlagUnlocked flagUnlocked
+                                            && flagUnlocked.ConditionFlag == ownTrigger.ConditionFlag)
+                                        || sol.IsAvail;
+                        if (!relevant) continue;
+                        solStrings += sol.PreviewText() + "\n";
                         if (subEvent != null) {
                             var finalSols = from subEventSol in subEvent.EventSolutions
                                             where subEventSol.m_AvailConditions.HasConditions && subEventSol.m_AvailConditions.Conditions[0] is FlagUnlocked flagUnlockCond && sol.m_SuccessEffects.Actions.ToList().Find(act => act is UnlockFlag) is UnlockFlag intermediateFlagUnlocked && intermediateFlagUnlocked.flag == flagUnlockCond.ConditionFlag
                                             select subEventSol;
-                            if (finalSols.Count() > 1)
+                            var finalSolsList = finalSols.ToList(); // rider says possible multiple enumeration without adding to list so new variable to list
+                            if (finalSolsList.Count() > 1)
                                 solStrings += " leads to\n".SizePercent(75);
-                            foreach (var endSolution in finalSols) {
+                            foreach (var endSolution in finalSolsList) {
                                 solStrings += $"    {endSolution.PreviewText()}\n";
                             }
                         } else
